@@ -4,6 +4,8 @@ package json
 
 import (
 	"log/slog"
+
+	"github.com/goccy/go-json"
 )
 
 var (
