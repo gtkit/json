@@ -1,6 +1,6 @@
 ### 默认使用 "encoding/json", 运行
 ```
-CheckJson() // 检查json是否符合规范
+CheckJSON() // 检查json是否符合规范
 ```
 
 ### Build jsoniter json

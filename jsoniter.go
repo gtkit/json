@@ -20,6 +20,6 @@ var (
 	NewEncoder = json.NewEncoder
 )
 
-func CheckJson() {
+func CheckJSON() {
 	log.Println("jsoniter is used for JSON")
 }

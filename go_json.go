@@ -21,6 +21,6 @@ var (
 	NewEncoder = json.NewEncoder
 )
 
-func CheckJson() {
+func CheckJSON() {
 	log.Println("go-json is used for JSON")
 }

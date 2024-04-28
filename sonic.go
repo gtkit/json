@@ -22,6 +22,6 @@ var (
 	NewEncoder = json.NewEncoder
 )
 
-func CheckJson() {
+func CheckJSON() {
 	log.Println("sonic is used for JSON")
 }

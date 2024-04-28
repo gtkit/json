@@ -20,6 +20,6 @@ var (
 	NewEncoder = json.NewEncoder
 )
 
-func CheckJson() {
+func CheckJSON() {
 	log.Println("standard json package is used for JSON")
 }

@@ -1,4 +1,4 @@
-module json
+module github.com/gtkit/json
 
 go 1.22
 
