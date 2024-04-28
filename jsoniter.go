@@ -3,6 +3,8 @@
 package json
 
 import (
+	"log"
+
 	jsoniter "github.com/json-iterator/go"
 )
 
