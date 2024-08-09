@@ -22,3 +22,7 @@ var (
 func CheckJSON() {
 	slog.Info("standard json package is used for JSON")
 }
+
+func SupportPrivateFields() {
+	// standard json package does not support private fields
+}

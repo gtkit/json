@@ -23,3 +23,7 @@ var (
 func CheckJSON() {
 	slog.Info("go-json is used for JSON")
 }
+
+func SupportPrivateFields() {
+	// go-json does not support private fields
+}

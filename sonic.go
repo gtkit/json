@@ -25,3 +25,7 @@ var (
 func CheckJSON() {
 	slog.Info("sonic is used for JSON")
 }
+
+func SupportPrivateFields() {
+	// sonic does not support private fields
+}

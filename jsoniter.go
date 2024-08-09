@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/json-iterator/go/extra"
 )
 
 var (
@@ -24,4 +25,9 @@ var (
 
 func CheckJSON() {
 	slog.Info("jsoniter is used for JSON")
+}
+
+func SupportPrivateFields() {
+	// Enable support for private fields
+	extra.SupportPrivateFields()
 }
