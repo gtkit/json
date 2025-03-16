@@ -29,5 +29,9 @@ func CheckJSON() {
 
 func SupportPrivateFields() {
 	// Enable support for private fields
-	extra.SupportPrivateFields()
+	extra.SupportPrivateFields() // 支持非导出字段
+}
+
+func RegisterFuzzyDecoders() {
+	extra.RegisterFuzzyDecoders() // 开启 php 兼容模式
 }
