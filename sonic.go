@@ -3,7 +3,7 @@
 package json
 
 import (
-	"log/slog"
+	"log"
 
 	"github.com/bytedance/sonic"
 )
@@ -23,7 +23,7 @@ var (
 )
 
 func CheckJSON() {
-	slog.Info("sonic is used for JSON")
+	log.Println("sonic is used for JSON")
 }
 
 func SupportPrivateFields() {

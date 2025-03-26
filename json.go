@@ -4,7 +4,7 @@ package json
 
 import (
 	"encoding/json"
-	"log/slog"
+	"log"
 )
 
 var (
@@ -20,7 +20,7 @@ var (
 )
 
 func CheckJSON() {
-	slog.Info("standard json package is used for JSON")
+	log.Println("standard json package is used for JSON")
 }
 
 func SupportPrivateFields() {

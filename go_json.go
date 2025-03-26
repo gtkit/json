@@ -3,7 +3,7 @@
 package json
 
 import (
-	"log/slog"
+	"log"
 
 	"github.com/goccy/go-json"
 )
@@ -21,7 +21,7 @@ var (
 )
 
 func CheckJSON() {
-	slog.Info("go-json is used for JSON")
+	log.Println("go-json is used for JSON")
 }
 
 func SupportPrivateFields() {

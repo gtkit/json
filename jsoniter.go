@@ -3,7 +3,7 @@
 package json
 
 import (
-	"log/slog"
+	"log"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/json-iterator/go/extra"
@@ -24,7 +24,7 @@ var (
 )
 
 func CheckJSON() {
-	slog.Info("jsoniter is used for JSON")
+	log.Println("jsoniter is used for JSON")
 }
 
 func SupportPrivateFields() {
