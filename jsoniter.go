@@ -9,6 +9,8 @@ import (
 	"github.com/json-iterator/go/extra"
 )
 
+type Encoder = jsoniter.Encoder
+
 var (
 	json = jsoniter.ConfigCompatibleWithStandardLibrary
 

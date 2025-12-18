@@ -8,6 +8,8 @@ import (
 	"github.com/goccy/go-json"
 )
 
+type Encoder = json.Encoder
+
 var (
 	Marshal = json.Marshal
 

@@ -7,6 +7,8 @@ import (
 	"log"
 )
 
+type Encoder = json.Encoder
+
 var (
 	Marshal = json.Marshal
 

@@ -8,6 +8,8 @@ import (
 	"github.com/bytedance/sonic"
 )
 
+type Encoder = sonic.Encoder
+
 var (
 	json = sonic.ConfigStd
 
