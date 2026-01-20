@@ -3,27 +3,43 @@
 package json
 
 import (
+	"io"
 	"log"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/json-iterator/go/extra"
 )
 
-type Encoder = jsoniter.Encoder
+// Package indicates what library is being used for JSON encoding.
+const Package = "github.com/json-iterator/go"
 
-var (
-	json = jsoniter.ConfigCompatibleWithStandardLibrary
+func init() {
+	API = jsoniterApi{}
+}
 
-	Marshal = json.Marshal
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
-	Unmarshal = json.Unmarshal
+type jsoniterApi struct{}
 
-	MarshalIndent = json.MarshalIndent
+func (j jsoniterApi) Marshal(v any) ([]byte, error) {
+	return json.Marshal(v)
+}
 
-	NewDecoder = json.NewDecoder
+func (j jsoniterApi) Unmarshal(data []byte, v any) error {
+	return json.Unmarshal(data, v)
+}
 
-	NewEncoder = json.NewEncoder
-)
+func (j jsoniterApi) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+	return json.MarshalIndent(v, prefix, indent)
+}
+
+func (j jsoniterApi) NewEncoder(writer io.Writer) Encoder {
+	return json.NewEncoder(writer)
+}
+
+func (j jsoniterApi) NewDecoder(reader io.Reader) Decoder {
+	return json.NewDecoder(reader)
+}
 
 func CheckJSON() {
 	log.Println("jsoniter is used for JSON")

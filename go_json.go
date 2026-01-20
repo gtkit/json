@@ -3,29 +3,42 @@
 package json
 
 import (
-	"log"
+	"io"
 
 	"github.com/goccy/go-json"
 )
 
-type Encoder = json.Encoder
+// Package indicates what library is being used for JSON encoding.
+const Package = "github.com/goccy/go-json"
 
-var (
-	Marshal = json.Marshal
+func init() {
+	API = gojsonApi{}
+}
 
-	Unmarshal = json.Unmarshal
+type gojsonApi struct{}
 
-	MarshalIndent = json.MarshalIndent
+func (j gojsonApi) Marshal(v any) ([]byte, error) {
+	return json.Marshal(v)
+}
 
-	NewDecoder = json.NewDecoder
+func (j gojsonApi) Unmarshal(data []byte, v any) error {
+	return json.Unmarshal(data, v)
+}
 
-	NewEncoder = json.NewEncoder
-)
+func (j gojsonApi) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+	return json.MarshalIndent(v, prefix, indent)
+}
+
+func (j gojsonApi) NewEncoder(writer io.Writer) Encoder {
+	return json.NewEncoder(writer)
+}
+
+func (j gojsonApi) NewDecoder(reader io.Reader) Decoder {
+	return json.NewDecoder(reader)
+}
 
 func CheckJSON() {
 	log.Println("go-json is used for JSON")
 }
 
-func SupportPrivateFields() {
-	// go-json does not support private fields
-}
+func SupportPrivateFields() {}

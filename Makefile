@@ -24,7 +24,10 @@ tag:
 	sed -E -i.bak 's/(const Version = ")([^"]+)(")/\1'"$$new"'\3/' version.go; \
 	git add version.go; \
 	git commit -m "chore(release): $$new"; \
-	git push origin HEAD; \
+	printf "Release: %s\n" "$$new"; \
+	git push main HEAD; \
 	git tag -a "$$new" -m "release $$new"; \
-	git push origin "$$new"; \
+	printf "Tag: %s\n" "$$new"; \
+	git push main "$$new"; \
+	printf "Done\n"
 	rm -f version.go.bak

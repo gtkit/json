@@ -1,30 +1,44 @@
-//go:build !jsoniter && !go_json && !(sonic && avx && (linux || windows || darwin) && amd64)
+//go:build !jsoniter && !go_json && !(sonic && (linux || windows || darwin))
 
 package json
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 )
 
-type Encoder = json.Encoder
+// Package indicates what library is being used for JSON encoding.
+const Package = "encoding/json"
 
-var (
-	Marshal = json.Marshal
+func init() {
+	API = jsonApi{}
+}
 
-	Unmarshal = json.Unmarshal
+type jsonApi struct{}
 
-	MarshalIndent = json.MarshalIndent
+func (j jsonApi) Marshal(v any) ([]byte, error) {
+	return json.Marshal(v)
+}
 
-	NewDecoder = json.NewDecoder
+func (j jsonApi) Unmarshal(data []byte, v any) error {
+	return json.Unmarshal(data, v)
+}
 
-	NewEncoder = json.NewEncoder
-)
+func (j jsonApi) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+	return json.MarshalIndent(v, prefix, indent)
+}
+
+func (j jsonApi) NewEncoder(writer io.Writer) Encoder {
+	return json.NewEncoder(writer)
+}
+
+func (j jsonApi) NewDecoder(reader io.Reader) Decoder {
+	return json.NewDecoder(reader)
+}
 
 func CheckJSON() {
 	log.Println("standard json package is used for JSON")
 }
 
-func SupportPrivateFields() {
-	// standard json package does not support private fields
-}
+func SupportPrivateFields() {}
