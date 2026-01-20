@@ -41,4 +41,5 @@ func CheckJSON() {
 	log.Println("go-json is used for JSON")
 }
 
+// 此函数用于检查是否支持私有字段，此处用不到，故留空，兼容性考虑
 func SupportPrivateFields() {}
