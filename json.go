@@ -4,41 +4,30 @@ package json
 
 import (
 	"encoding/json"
-	"io"
 	"log"
 )
 
-// Package indicates what library is being used for JSON encoding.
-const Package = "encoding/json"
+type Encoder = json.Encoder
+type Decoder = json.Decoder
 
-func init() {
-	API = jsonApi{}
-}
+var (
+	Marshal = json.Marshal
 
-type jsonApi struct{}
+	Unmarshal = json.Unmarshal
 
-func (j jsonApi) Marshal(v any) ([]byte, error) {
-	return json.Marshal(v)
-}
+	MarshalIndent = json.MarshalIndent
 
-func (j jsonApi) Unmarshal(data []byte, v any) error {
-	return json.Unmarshal(data, v)
-}
+	NewDecoder = json.NewDecoder
 
-func (j jsonApi) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
-	return json.MarshalIndent(v, prefix, indent)
-}
-
-func (j jsonApi) NewEncoder(writer io.Writer) Encoder {
-	return json.NewEncoder(writer)
-}
-
-func (j jsonApi) NewDecoder(reader io.Reader) Decoder {
-	return json.NewDecoder(reader)
-}
+	NewEncoder = json.NewEncoder
+)
 
 func CheckJSON() {
 	log.Println("standard json package is used for JSON")
 }
 
-func SupportPrivateFields() {}
+func SupportPrivateFields() {
+	// standard json package does not support private fields
+}
+
+func RegisterFuzzyDecoders() {}

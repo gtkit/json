@@ -3,43 +3,32 @@
 package json
 
 import (
-	"io"
+	"log"
 
 	"github.com/goccy/go-json"
 )
 
-// Package indicates what library is being used for JSON encoding.
-const Package = "github.com/goccy/go-json"
+type Encoder = json.Encoder
+type Decoder = json.Decoder
 
-func init() {
-	API = gojsonApi{}
-}
+var (
+	Marshal = json.Marshal
 
-type gojsonApi struct{}
+	Unmarshal = json.Unmarshal
 
-func (j gojsonApi) Marshal(v any) ([]byte, error) {
-	return json.Marshal(v)
-}
+	MarshalIndent = json.MarshalIndent
 
-func (j gojsonApi) Unmarshal(data []byte, v any) error {
-	return json.Unmarshal(data, v)
-}
+	NewDecoder = json.NewDecoder
 
-func (j gojsonApi) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
-	return json.MarshalIndent(v, prefix, indent)
-}
-
-func (j gojsonApi) NewEncoder(writer io.Writer) Encoder {
-	return json.NewEncoder(writer)
-}
-
-func (j gojsonApi) NewDecoder(reader io.Reader) Decoder {
-	return json.NewDecoder(reader)
-}
+	NewEncoder = json.NewEncoder
+)
 
 func CheckJSON() {
 	log.Println("go-json is used for JSON")
 }
 
-// 此函数用于检查是否支持私有字段，此处用不到，故留空，兼容性考虑
-func SupportPrivateFields() {}
+func SupportPrivateFields() {
+	// go-json does not support private fields
+}
+
+func RegisterFuzzyDecoders() {}

@@ -1,7 +1,6 @@
 ### 默认使用 "encoding/json", 运行
 ```
-CheckJSON() // 检查json是否符合规范
-TrackTime() // 跟踪json解析时间
+CheckJSON() // 检查json是用的哪个库
 ```
 
 ### Build jsoniter json

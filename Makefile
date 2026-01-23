@@ -25,9 +25,9 @@ tag:
 	git add version.go; \
 	git commit -m "chore(release): $$new"; \
 	printf "Release: %s\n" "$$new"; \
-	git push main HEAD; \
+	git push gtkit main HEAD; \
 	git tag -a "$$new" -m "release $$new"; \
 	printf "Tag: %s\n" "$$new"; \
-	git push main "$$new"; \
+	git push gtkit main "$$new"; \
 	printf "Done\n"
 	rm -f version.go.bak

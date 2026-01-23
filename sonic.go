@@ -3,44 +3,34 @@
 package json
 
 import (
-	"io"
+	"log"
 
 	"github.com/bytedance/sonic"
 )
 
-// Package indicates what library is being used for JSON encoding.
-const Package = "github.com/bytedance/sonic"
+type Encoder = json.Encoder
+type Decoder = json.Decoder
 
-func init() {
-	API = sonicApi{}
-}
+var (
+	json = sonic.ConfigStd
 
-var json = sonic.ConfigStd
+	Marshal = json.Marshal
 
-type sonicApi struct{}
+	Unmarshal = json.Unmarshal
 
-func (j sonicApi) Marshal(v any) ([]byte, error) {
-	return json.Marshal(v)
-}
+	MarshalIndent = json.MarshalIndent
 
-func (j sonicApi) Unmarshal(data []byte, v any) error {
-	return json.Unmarshal(data, v)
-}
+	NewDecoder = json.NewDecoder
 
-func (j sonicApi) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
-	return json.MarshalIndent(v, prefix, indent)
-}
-
-func (j sonicApi) NewEncoder(writer io.Writer) Encoder {
-	return json.NewEncoder(writer)
-}
-
-func (j sonicApi) NewDecoder(reader io.Reader) Decoder {
-	return json.NewDecoder(reader)
-}
+	NewEncoder = json.NewEncoder
+)
 
 func CheckJSON() {
 	log.Println("sonic is used for JSON")
 }
 
-func SupportPrivateFields() {}
+func SupportPrivateFields() {
+	// sonic does not support private fields
+}
+
+func RegisterFuzzyDecoders() {}
