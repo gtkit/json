@@ -12,6 +12,7 @@ tool: ## Lint Go code with the installed golangci-lint
 check:
 	govulncheck ./...
 
+## 推送标签到远程仓库时，通常不需要指定分支
 tag:
 	@current=$$(grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' version.go | head -n1 | tr -d 'v'); \
 	if [ -z "$$current" ]; then echo "version not found in version.go"; exit 1; fi; \
@@ -25,9 +26,9 @@ tag:
 	git add version.go; \
 	git commit -m "chore(release): $$new"; \
 	printf "Release: %s\n" "$$new"; \
-	git push gtkit main HEAD; \
+	git push gtkit HEAD; \
 	git tag -a "$$new" -m "release $$new"; \
 	printf "Tag: %s\n" "$$new"; \
-	git push gtkit main "$$new"; \
+	git push gtkit "$$new"; \
 	printf "Done\n"
 	rm -f version.go.bak
