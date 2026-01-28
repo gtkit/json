@@ -1,3 +1,3 @@
 package json
 
-const Version = "v0.2.6"
+const Version = "v0.2.7"
