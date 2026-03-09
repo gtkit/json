@@ -1,6 +1,6 @@
 module github.com/gtkit/json
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/bytedance/sonic v1.15.0
@@ -16,6 +16,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
-	golang.org/x/arch v0.23.0 // indirect
-	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/arch v0.25.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
 )

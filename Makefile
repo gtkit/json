@@ -10,7 +10,7 @@ tool: ## Lint Go code with the installed golangci-lint
 
 ## govulncheck 检查漏洞 go install golang.org/x/vuln/cmd/govulncheck@latest
 check:
-	govulncheck ./...
+	govulncheck $(LINT_TARGETS)
 
 ## 推送标签到远程仓库时，通常不需要指定分支
 tag:

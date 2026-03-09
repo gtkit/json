@@ -9,6 +9,7 @@ import (
 
 type Encoder = json.Encoder
 type Decoder = json.Decoder
+type RawMessage = json.RawMessage
 
 var (
 	Marshal = json.Marshal
@@ -31,3 +32,5 @@ func SupportPrivateFields() {
 }
 
 func RegisterFuzzyDecoders() {}
+
+func SetFastest() {}

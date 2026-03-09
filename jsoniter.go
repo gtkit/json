@@ -11,6 +11,7 @@ import (
 
 type Encoder = jsoniter.Encoder
 type Decoder = jsoniter.Decoder
+type RawMessage = jsoniter.RawMessage
 
 var (
 	json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -38,3 +39,5 @@ func SupportPrivateFields() {
 func RegisterFuzzyDecoders() {
 	extra.RegisterFuzzyDecoders() // 开启 php 兼容模式
 }
+
+func SetFastest() {}

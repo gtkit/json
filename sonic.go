@@ -8,8 +8,10 @@ import (
 	"github.com/bytedance/sonic"
 )
 
+// 使用类型别名，避免与标准库 json 包的类型冲突.
 type Encoder = sonic.Encoder
 type Decoder = sonic.Decoder
+type RawMessage = sonic.NoCopyRawMessage
 
 var (
 	json = sonic.ConfigStd
@@ -18,11 +20,17 @@ var (
 
 	Unmarshal = json.Unmarshal
 
+	MarshalToString = json.MarshalToString
+
+	UnmarshalFromString = json.UnmarshalFromString
+
 	MarshalIndent = json.MarshalIndent
 
 	NewDecoder = json.NewDecoder
 
 	NewEncoder = json.NewEncoder
+
+	Valid = json.Valid
 )
 
 func CheckJSON() {
@@ -34,3 +42,7 @@ func SupportPrivateFields() {
 }
 
 func RegisterFuzzyDecoders() {}
+
+func SetFastest() {
+	json = sonic.ConfigFastest
+}
