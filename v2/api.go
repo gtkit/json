@@ -1,11 +1,29 @@
 package json
 
-import "io"
+import (
+	stdjson "encoding/json"
+	"io"
+	"unsafe"
+)
 
 // API is the active JSON codec, set via init() based on build tags.
+// If no backend init() runs, the package-level init below guarantees
+// API is never nil by falling back to encoding/json.
+//
 // Callers should prefer the top-level functions (Marshal, Unmarshal, etc.)
 // which delegate to API internally.
 var API Core
+
+func init() {
+	// This init runs after all backend-specific init() functions (file-level init
+	// order is undefined across files, but all init()s complete before main).
+	// If a backend already set API, this is a no-op.
+	// If API is still nil (unexpected build tag combination, or the default backend
+	// file was excluded), fall back to encoding/json to prevent nil-panic.
+	if API == nil {
+		API = stdFallback{}
+	}
+}
 
 // Core defines the full capability set of a JSON codec.
 type Core interface {
@@ -56,6 +74,42 @@ type Decoder interface {
 	// Decode reads the next JSON-encoded value from its
 	// input and stores it in the value pointed to by v.
 	Decode(v any) error
+}
+
+// stdFallback is the encoding/json implementation.
+// Serves as both the default backend (json.go) and the safety-net fallback.
+type stdFallback struct{}
+
+func (stdFallback) Marshal(v any) ([]byte, error) {
+	return stdjson.Marshal(v)
+}
+
+func (stdFallback) Unmarshal(data []byte, v any) error {
+	return stdjson.Unmarshal(data, v)
+}
+
+func (stdFallback) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+	return stdjson.MarshalIndent(v, prefix, indent)
+}
+
+func (stdFallback) MarshalToString(v any) (string, error) {
+	b, err := stdjson.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return unsafe.String(unsafe.SliceData(b), len(b)), nil
+}
+
+func (stdFallback) NewEncoder(w io.Writer) Encoder {
+	return stdjson.NewEncoder(w)
+}
+
+func (stdFallback) NewDecoder(r io.Reader) Decoder {
+	return stdjson.NewDecoder(r)
+}
+
+func (stdFallback) Valid(data []byte) bool {
+	return stdjson.Valid(data)
 }
 
 // Top-level convenience functions that delegate to the active API.
