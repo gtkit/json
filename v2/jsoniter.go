@@ -43,4 +43,6 @@ func (j jsoniterApi) SupportPrivateFields() {
 	// sonic does not support private fields
 }
 
-func (j jsoniterApi) RegisterFuzzyDecoders() {}
+func (j jsoniterApi) RegisterFuzzyDecoders() {
+	extra.RegisterFuzzyDecoders() // 开启 php 兼容模式
+}
