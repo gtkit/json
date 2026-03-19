@@ -4,41 +4,48 @@ package json
 
 import (
 	"io"
+	"unsafe"
 
-	"github.com/goccy/go-json"
+	gojson "github.com/goccy/go-json"
 )
 
-// Package indicates what library is being used for JSON encoding.
+// Package indicates the JSON library in use.
 const Package = "github.com/goccy/go-json"
 
 func init() {
-	API = gojsonApi{}
+	API = goJSONAPI{}
 }
 
-type gojsonApi struct{}
+type goJSONAPI struct{}
 
-func (j gojsonApi) Marshal(v any) ([]byte, error) {
-	return json.Marshal(v)
+func (goJSONAPI) Marshal(v any) ([]byte, error) {
+	return gojson.Marshal(v)
 }
 
-func (j gojsonApi) Unmarshal(data []byte, v any) error {
-	return json.Unmarshal(data, v)
+func (goJSONAPI) Unmarshal(data []byte, v any) error {
+	return gojson.Unmarshal(data, v)
 }
 
-func (j gojsonApi) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
-	return json.MarshalIndent(v, prefix, indent)
+func (goJSONAPI) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+	return gojson.MarshalIndent(v, prefix, indent)
 }
 
-func (j gojsonApi) NewEncoder(writer io.Writer) Encoder {
-	return json.NewEncoder(writer)
+func (goJSONAPI) MarshalToString(v any) (string, error) {
+	b, err := gojson.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return unsafe.String(unsafe.SliceData(b), len(b)), nil
 }
 
-func (j gojsonApi) NewDecoder(reader io.Reader) Decoder {
-	return json.NewDecoder(reader)
+func (goJSONAPI) NewEncoder(writer io.Writer) Encoder {
+	return gojson.NewEncoder(writer)
 }
 
-func (j gojsonApi) SupportPrivateFields() {
-	// sonic does not support private fields
+func (goJSONAPI) NewDecoder(reader io.Reader) Decoder {
+	return gojson.NewDecoder(reader)
 }
 
-func (j gojsonApi) RegisterFuzzyDecoders() {}
+func (goJSONAPI) Valid(data []byte) bool {
+	return gojson.Valid(data)
+}

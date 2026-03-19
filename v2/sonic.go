@@ -8,39 +8,54 @@ import (
 	"github.com/bytedance/sonic"
 )
 
-// Package indicates what library is being used for JSON encoding.
+// Package indicates the JSON library in use.
 const Package = "github.com/bytedance/sonic"
 
 func init() {
-	API = sonicApi{}
+	API = sonicAPI{}
 }
 
-var json = sonic.ConfigStd
+// sonicJSON holds the sonic config. Default is ConfigStd for maximum compatibility.
+// Call SetFastest() to switch to ConfigFastest for higher throughput.
+var sonicJSON sonic.API = sonic.ConfigStd
 
-type sonicApi struct{}
+type sonicAPI struct{}
 
-func (j sonicApi) Marshal(v any) ([]byte, error) {
-	return json.Marshal(v)
+func (sonicAPI) Marshal(v any) ([]byte, error) {
+	return sonicJSON.Marshal(v)
 }
 
-func (j sonicApi) Unmarshal(data []byte, v any) error {
-	return json.Unmarshal(data, v)
+func (sonicAPI) Unmarshal(data []byte, v any) error {
+	return sonicJSON.Unmarshal(data, v)
 }
 
-func (j sonicApi) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
-	return json.MarshalIndent(v, prefix, indent)
+func (sonicAPI) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+	return sonicJSON.MarshalIndent(v, prefix, indent)
 }
 
-func (j sonicApi) NewEncoder(writer io.Writer) Encoder {
-	return json.NewEncoder(writer)
+func (sonicAPI) MarshalToString(v any) (string, error) {
+	return sonicJSON.MarshalToString(v)
 }
 
-func (j sonicApi) NewDecoder(reader io.Reader) Decoder {
-	return json.NewDecoder(reader)
+func (sonicAPI) NewEncoder(writer io.Writer) Encoder {
+	return sonicJSON.NewEncoder(writer)
 }
 
-func (j sonicApi) SupportPrivateFields() {
-	// sonic does not support private fields
+func (sonicAPI) NewDecoder(reader io.Reader) Decoder {
+	return sonicJSON.NewDecoder(reader)
 }
 
-func (j sonicApi) RegisterFuzzyDecoders() {}
+func (sonicAPI) Valid(data []byte) bool {
+	return sonicJSON.Valid(data)
+}
+
+// SetFastest switches sonic to ConfigFastest mode for maximum throughput.
+// This disables some standard library compatibility features:
+//   - sorting map keys is disabled
+//   - HTML escaping is disabled
+//   - key pretouch validation is disabled
+//
+// Call this early in main() before any concurrent access.
+func SetFastest() {
+	sonicJSON = sonic.ConfigFastest
+}

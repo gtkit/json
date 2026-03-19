@@ -2,38 +2,47 @@ package json
 
 import "io"
 
-// API the json codec in use.
+// API is the active JSON codec, set via init() based on build tags.
+// Callers should prefer the top-level functions (Marshal, Unmarshal, etc.)
+// which delegate to API internally.
 var API Core
 
-// Core the api for json codec.
+// Core defines the full capability set of a JSON codec.
 type Core interface {
+	// Marshal returns the JSON encoding of v.
 	Marshal(v any) ([]byte, error)
+
+	// Unmarshal parses the JSON-encoded data and stores the result in v.
 	Unmarshal(data []byte, v any) error
+
+	// MarshalIndent is like Marshal but applies Indent to format the output.
 	MarshalIndent(v any, prefix, indent string) ([]byte, error)
+
+	// MarshalToString returns the JSON encoding of v as a string.
+	MarshalToString(v any) (string, error)
+
+	// NewEncoder returns a new Encoder that writes to w.
 	NewEncoder(writer io.Writer) Encoder
+
+	// NewDecoder returns a new Decoder that reads from r.
 	NewDecoder(reader io.Reader) Decoder
+
+	// Valid reports whether data is a valid JSON encoding.
+	Valid(data []byte) bool
 }
 
-// Encoder an interface writes JSON values to an output stream.
+// Encoder writes JSON values to an output stream.
 type Encoder interface {
 	// SetEscapeHTML specifies whether problematic HTML characters
 	// should be escaped inside JSON quoted strings.
-	// The default behavior is to escape &, <, and > to \u0026, \u003c, and \u003e
-	// to avoid certain safety problems that can arise when embedding JSON in HTML.
-	//
-	// In non-HTML settings where the escaping interferes with the readability
-	// of the output, SetEscapeHTML(false) disables this behavior.
 	SetEscapeHTML(on bool)
 
 	// Encode writes the JSON encoding of v to the stream,
 	// followed by a newline character.
-	//
-	// See the documentation for Marshal for details about the
-	// conversion of Go values to JSON.
 	Encode(v any) error
 }
 
-// Decoder an interface reads and decodes JSON values from an input stream.
+// Decoder reads and decodes JSON values from an input stream.
 type Decoder interface {
 	// UseNumber causes the Decoder to unmarshal a number into an any as a
 	// Number instead of as a float64.
@@ -46,8 +55,43 @@ type Decoder interface {
 
 	// Decode reads the next JSON-encoded value from its
 	// input and stores it in the value pointed to by v.
-	//
-	// See the documentation for Unmarshal for details about
-	// the conversion of JSON into a Go value.
 	Decode(v any) error
+}
+
+// Top-level convenience functions that delegate to the active API.
+// These provide the familiar json.Marshal / json.Unmarshal calling convention.
+
+// Marshal returns the JSON encoding of v.
+func Marshal(v any) ([]byte, error) {
+	return API.Marshal(v)
+}
+
+// Unmarshal parses the JSON-encoded data and stores the result in v.
+func Unmarshal(data []byte, v any) error {
+	return API.Unmarshal(data, v)
+}
+
+// MarshalIndent is like Marshal but applies Indent to format the output.
+func MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+	return API.MarshalIndent(v, prefix, indent)
+}
+
+// MarshalToString returns the JSON encoding of v as a string.
+func MarshalToString(v any) (string, error) {
+	return API.MarshalToString(v)
+}
+
+// NewEncoder returns a new Encoder that writes to w.
+func NewEncoder(writer io.Writer) Encoder {
+	return API.NewEncoder(writer)
+}
+
+// NewDecoder returns a new Decoder that reads from r.
+func NewDecoder(reader io.Reader) Decoder {
+	return API.NewDecoder(reader)
+}
+
+// Valid reports whether data is a valid JSON encoding.
+func Valid(data []byte) bool {
+	return API.Valid(data)
 }

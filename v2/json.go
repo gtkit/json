@@ -5,39 +5,46 @@ package json
 import (
 	"encoding/json"
 	"io"
+	"unsafe"
 )
 
-// Package indicates what library is being used for JSON encoding.
+// Package indicates the JSON library in use.
 const Package = "encoding/json"
 
 func init() {
-	API = jsonApi{}
+	API = stdAPI{}
 }
 
-type jsonApi struct{}
+type stdAPI struct{}
 
-func (j jsonApi) Marshal(v any) ([]byte, error) {
+func (stdAPI) Marshal(v any) ([]byte, error) {
 	return json.Marshal(v)
 }
 
-func (j jsonApi) Unmarshal(data []byte, v any) error {
+func (stdAPI) Unmarshal(data []byte, v any) error {
 	return json.Unmarshal(data, v)
 }
 
-func (j jsonApi) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+func (stdAPI) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
 	return json.MarshalIndent(v, prefix, indent)
 }
 
-func (j jsonApi) NewEncoder(writer io.Writer) Encoder {
+func (stdAPI) MarshalToString(v any) (string, error) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return unsafe.String(unsafe.SliceData(b), len(b)), nil
+}
+
+func (stdAPI) NewEncoder(writer io.Writer) Encoder {
 	return json.NewEncoder(writer)
 }
 
-func (j jsonApi) NewDecoder(reader io.Reader) Decoder {
+func (stdAPI) NewDecoder(reader io.Reader) Decoder {
 	return json.NewDecoder(reader)
 }
 
-func (j jsonApi) SupportPrivateFields() {
-	// sonic does not support private fields
+func (stdAPI) Valid(data []byte) bool {
+	return json.Valid(data)
 }
-
-func (j jsonApi) RegisterFuzzyDecoders() {}
