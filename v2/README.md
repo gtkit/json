@@ -250,4 +250,4 @@ v2 相比 v1 的变化：
 
 ## License
 
-MIT
+MIT，见 [../LICENSE](../LICENSE)。

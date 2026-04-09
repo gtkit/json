@@ -26,11 +26,11 @@ tag: ## Bump patch version and push tag
 	git commit -m "chore(release): v2 $$new"; \
 	printf "Release: %s\n" "$$new"; \
 	git push gtkit HEAD; \
-	git tag -a "v2/$${new}" -m "release v2/$$new"; \
-	printf "Tag: v2/%s\n" "$$new"; \
-	git push gtkit "v2/$${new}"; \
+	git tag -a "$$new" -m "release $$new"; \
+	printf "Tag: %s\n" "$$new"; \
+	git push gtkit "$$new"; \
 	printf "Done\n"
 	rm -f version.go.bak
 
 gittag: ## Show latest tag
-	git tag --sort=-version:refname | grep '^v2/' | head -1
+	git tag --sort=-version:refname | grep '^v2\.' | head -1

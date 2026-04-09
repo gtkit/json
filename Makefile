@@ -33,7 +33,7 @@ tag:
 	rm -f version.go.bak
 
 gittag:
-	git tag --sort=-version:refname | head -1
+	git tag --sort=-version:refname | grep -E '^v(0|1)\.' | head -1
 
 ## 删除最近一次提交，但保留修改内容
 delcommit:
