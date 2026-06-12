@@ -55,6 +55,10 @@ type Encoder interface {
 	// should be escaped inside JSON quoted strings.
 	SetEscapeHTML(on bool)
 
+	// SetIndent instructs the encoder to format each subsequent encoded value
+	// as if indented by the package-level function Indent.
+	SetIndent(prefix, indent string)
+
 	// Encode writes the JSON encoding of v to the stream,
 	// followed by a newline character.
 	Encode(v any) error
@@ -74,6 +78,13 @@ type Decoder interface {
 	// Decode reads the next JSON-encoded value from its
 	// input and stores it in the value pointed to by v.
 	Decode(v any) error
+
+	// Buffered returns a reader of the data remaining in the Decoder's buffer.
+	Buffered() io.Reader
+
+	// More reports whether there is another element in the current array or object
+	// being parsed.
+	More() bool
 }
 
 // stdFallback is the encoding/json implementation.

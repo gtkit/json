@@ -104,6 +104,7 @@ func TestEncoderDecoder(t *testing.T) {
 	var buf bytes.Buffer
 	enc := NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
 	if err := enc.Encode(struct {
 		Value string `json:"value"`
 	}{Value: "<tag>"}); err != nil {
@@ -111,6 +112,9 @@ func TestEncoderDecoder(t *testing.T) {
 	}
 	if strings.Contains(buf.String(), `\u003c`) {
 		t.Fatalf("Encode() escaped HTML despite SetEscapeHTML(false): %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "\n  ") {
+		t.Fatalf("Encode() did not indent despite SetIndent(): %q", buf.String())
 	}
 
 	dec := NewDecoder(strings.NewReader(buf.String()))
@@ -122,6 +126,27 @@ func TestEncoderDecoder(t *testing.T) {
 	}
 	if got.Value != "<tag>" {
 		t.Fatalf("Decode() value = %q, want %q", got.Value, "<tag>")
+	}
+}
+
+func TestDecoderBuffered(t *testing.T) {
+	dec := NewDecoder(strings.NewReader(`{"value":1} trailing`))
+	var got struct {
+		Value int `json:"value"`
+	}
+	if err := dec.Decode(&got); err != nil {
+		t.Fatalf("Decode() error = %v", err)
+	}
+	if got.Value != 1 {
+		t.Fatalf("Decode() value = %d, want 1", got.Value)
+	}
+
+	remaining, err := io.ReadAll(dec.Buffered())
+	if err != nil {
+		t.Fatalf("ReadAll(Buffered()) error = %v", err)
+	}
+	if !strings.Contains(string(remaining), "trailing") {
+		t.Fatalf("Buffered() = %q, want trailing data", remaining)
 	}
 }
 
@@ -147,6 +172,35 @@ func TestDecoderOptions(t *testing.T) {
 	}
 	if got := gotNumber.String(); got != "9007199254740993" {
 		t.Fatalf("UseNumber decoded value = %q, want %q", got, "9007199254740993")
+	}
+}
+
+func TestDecoderMore(t *testing.T) {
+	dec := NewDecoder(strings.NewReader(`1 2`))
+	if !dec.More() {
+		t.Fatal("More() before first value = false, want true")
+	}
+
+	var first int
+	if err := dec.Decode(&first); err != nil {
+		t.Fatalf("Decode() first value error = %v", err)
+	}
+	if first != 1 {
+		t.Fatalf("first value = %d, want 1", first)
+	}
+	if !dec.More() {
+		t.Fatal("More() before second value = false, want true")
+	}
+
+	var second int
+	if err := dec.Decode(&second); err != nil {
+		t.Fatalf("Decode() second value error = %v", err)
+	}
+	if second != 2 {
+		t.Fatalf("second value = %d, want 2", second)
+	}
+	if dec.More() {
+		t.Fatal("More() after final value = true, want false")
 	}
 }
 

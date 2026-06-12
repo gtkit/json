@@ -129,6 +129,24 @@ type Core interface {
 }
 ```
 
+### Encoder / Decoder 接口
+
+```go
+type Encoder interface {
+    SetEscapeHTML(on bool)
+    SetIndent(prefix, indent string)
+    Encode(v any) error
+}
+
+type Decoder interface {
+    UseNumber()
+    DisallowUnknownFields()
+    Decode(v any) error
+    Buffered() io.Reader
+    More() bool
+}
+```
+
 ### 常量
 
 ```go
@@ -194,13 +212,13 @@ v2 的 interface 设计使得测试 mock 变得简单：
 ```go
 type mockJSON struct{}
 
-func (mockJSON) Marshal(v any) ([]byte, error)                          { return []byte(`{}`), nil }
-func (mockJSON) Unmarshal(data []byte, v any) error                     { return nil }
+func (mockJSON) Marshal(v any) ([]byte, error)                              { return []byte(`{}`), nil }
+func (mockJSON) Unmarshal(data []byte, v any) error                         { return nil }
 func (mockJSON) MarshalIndent(v any, prefix, indent string) ([]byte, error) { return []byte(`{}`), nil }
-func (mockJSON) MarshalToString(v any) (string, error)                  { return "{}", nil }
-func (mockJSON) NewEncoder(w io.Writer) json.Encoder                    { return nil }
-func (mockJSON) NewDecoder(r io.Reader) json.Decoder                    { return nil }
-func (mockJSON) Valid(data []byte) bool                                 { return true }
+func (mockJSON) MarshalToString(v any) (string, error)                      { return "{}", nil }
+func (mockJSON) NewEncoder(w io.Writer) json.Encoder                        { return nil }
+func (mockJSON) NewDecoder(r io.Reader) json.Decoder                        { return nil }
+func (mockJSON) Valid(data []byte) bool                                     { return true }
 
 func TestWithMockJSON(t *testing.T) {
     original := json.API
