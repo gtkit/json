@@ -1,6 +1,7 @@
 package json
 
 import (
+	"bytes"
 	stdjson "encoding/json"
 	"io"
 	"unsafe"
@@ -13,6 +14,18 @@ import (
 // Callers should prefer the top-level functions (Marshal, Unmarshal, etc.)
 // which delegate to API internally.
 var API Core
+
+// RawMessage is a raw encoded JSON value.
+type RawMessage = stdjson.RawMessage
+
+// Number represents a JSON number literal.
+type Number = stdjson.Number
+
+// Marshaler is implemented by types that can marshal themselves into valid JSON.
+type Marshaler = stdjson.Marshaler
+
+// Unmarshaler is implemented by types that can unmarshal a JSON description of themselves.
+type Unmarshaler = stdjson.Unmarshaler
 
 func init() {
 	// This init runs after all backend-specific init() functions (file-level init
@@ -159,6 +172,21 @@ func NewDecoder(reader io.Reader) Decoder {
 // Valid reports whether data is a valid JSON encoding.
 func Valid(data []byte) bool {
 	return API.Valid(data)
+}
+
+// Compact appends to dst the JSON-encoded src with insignificant space removed.
+func Compact(dst *bytes.Buffer, src []byte) error {
+	return stdjson.Compact(dst, src)
+}
+
+// Indent appends to dst an indented form of the JSON-encoded src.
+func Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error {
+	return stdjson.Indent(dst, src, prefix, indent)
+}
+
+// HTMLEscape appends to dst the JSON-encoded src with HTML characters escaped.
+func HTMLEscape(dst *bytes.Buffer, src []byte) {
+	stdjson.HTMLEscape(dst, src)
 }
 
 // marshalBytesToString converts freshly marshaled JSON bytes to a string

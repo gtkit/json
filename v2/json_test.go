@@ -100,6 +100,89 @@ func TestMarshalToStringAndValid(t *testing.T) {
 	}
 }
 
+func TestRawMessage(t *testing.T) {
+	type envelope struct {
+		Data RawMessage `json:"data"`
+	}
+
+	src := envelope{Data: RawMessage(`{"nested":true}`)}
+	data, err := Marshal(src)
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+	if string(data) != `{"data":{"nested":true}}` {
+		t.Fatalf("Marshal() = %s, want raw nested JSON", data)
+	}
+
+	var got envelope
+	if err := Unmarshal(data, &got); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+	if string(got.Data) != `{"nested":true}` {
+		t.Fatalf("RawMessage = %s, want nested JSON", got.Data)
+	}
+}
+
+var (
+	_ Marshaler   = customJSON{}
+	_ Unmarshaler = (*customJSON)(nil)
+)
+
+type customJSON struct {
+	Value string
+}
+
+func (c customJSON) MarshalJSON() ([]byte, error) {
+	return []byte(`"custom"`), nil
+}
+
+func (c *customJSON) UnmarshalJSON(data []byte) error {
+	c.Value = string(data)
+	return nil
+}
+
+func TestMarshalerAliases(t *testing.T) {
+	data, err := Marshal(customJSON{})
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+	if string(data) != `"custom"` {
+		t.Fatalf("Marshal() = %s, want custom JSON", data)
+	}
+
+	var got customJSON
+	if err := Unmarshal([]byte(`"decoded"`), &got); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+	if got.Value != `"decoded"` {
+		t.Fatalf("UnmarshalJSON() stored %q, want raw decoded JSON", got.Value)
+	}
+}
+
+func TestFormatHelpers(t *testing.T) {
+	var compact bytes.Buffer
+	if err := Compact(&compact, []byte("{\n  \"a\": 1\n}")); err != nil {
+		t.Fatalf("Compact() error = %v", err)
+	}
+	if compact.String() != `{"a":1}` {
+		t.Fatalf("Compact() = %q, want compact JSON", compact.String())
+	}
+
+	var indented bytes.Buffer
+	if err := Indent(&indented, compact.Bytes(), "", "  "); err != nil {
+		t.Fatalf("Indent() error = %v", err)
+	}
+	if !strings.Contains(indented.String(), "\n  ") {
+		t.Fatalf("Indent() = %q, want indented JSON", indented.String())
+	}
+
+	var escaped bytes.Buffer
+	HTMLEscape(&escaped, []byte(`{"tag":"<script>"}`))
+	if !strings.Contains(escaped.String(), `\u003cscript\u003e`) {
+		t.Fatalf("HTMLEscape() = %q, want escaped HTML characters", escaped.String())
+	}
+}
+
 func TestEncoderDecoder(t *testing.T) {
 	var buf bytes.Buffer
 	enc := NewEncoder(&buf)
@@ -166,9 +249,9 @@ func TestDecoderOptions(t *testing.T) {
 	if err := dec.Decode(&numbers); err != nil {
 		t.Fatalf("Decode() with UseNumber error = %v", err)
 	}
-	gotNumber, ok := numbers["n"].(interface{ String() string })
+	gotNumber, ok := numbers["n"].(Number)
 	if !ok {
-		t.Fatalf("UseNumber decoded type = %T, want Stringer", numbers["n"])
+		t.Fatalf("UseNumber decoded type = %T, want json.Number", numbers["n"])
 	}
 	if got := gotNumber.String(); got != "9007199254740993" {
 		t.Fatalf("UseNumber decoded value = %q, want %q", got, "9007199254740993")

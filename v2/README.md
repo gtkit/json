@@ -111,6 +111,18 @@ json.MarshalToString(v any) (string, error)
 json.NewEncoder(w io.Writer) json.Encoder
 json.NewDecoder(r io.Reader) json.Decoder
 json.Valid(data []byte) bool
+json.Compact(dst *bytes.Buffer, src []byte) error
+json.Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error
+json.HTMLEscape(dst *bytes.Buffer, src []byte)
+```
+
+### 兼容类型
+
+```go
+type RawMessage = encoding/json.RawMessage
+type Number = encoding/json.Number
+type Marshaler = encoding/json.Marshaler
+type Unmarshaler = encoding/json.Unmarshaler
 ```
 
 ### Core 接口
