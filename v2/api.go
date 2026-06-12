@@ -97,7 +97,7 @@ func (stdFallback) MarshalToString(v any) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return unsafe.String(unsafe.SliceData(b), len(b)), nil
+	return marshalBytesToString(b), nil
 }
 
 func (stdFallback) NewEncoder(w io.Writer) Encoder {
@@ -148,4 +148,10 @@ func NewDecoder(reader io.Reader) Decoder {
 // Valid reports whether data is a valid JSON encoding.
 func Valid(data []byte) bool {
 	return API.Valid(data)
+}
+
+// marshalBytesToString converts freshly marshaled JSON bytes to a string
+// without an extra allocation. The caller must not mutate b after conversion.
+func marshalBytesToString(b []byte) string {
+	return unsafe.String(unsafe.SliceData(b), len(b))
 }

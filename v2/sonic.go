@@ -55,7 +55,7 @@ func (sonicAPI) Valid(data []byte) bool {
 //   - HTML escaping is disabled
 //   - key pretouch validation is disabled
 //
-// Call this early in main() before any concurrent access.
+// Call this during process startup before concurrent JSON operations begin.
 func SetFastest() {
 	sonicJSON = sonic.ConfigFastest
 }

@@ -4,7 +4,6 @@ package json
 
 import (
 	"io"
-	"unsafe"
 
 	gojson "github.com/goccy/go-json"
 )
@@ -35,7 +34,7 @@ func (goJSONAPI) MarshalToString(v any) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return unsafe.String(unsafe.SliceData(b), len(b)), nil
+	return marshalBytesToString(b), nil
 }
 
 func (goJSONAPI) NewEncoder(writer io.Writer) Encoder {

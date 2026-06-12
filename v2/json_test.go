@@ -1,6 +1,10 @@
 package json
 
 import (
+	"bytes"
+	"errors"
+	"io"
+	"strings"
 	"testing"
 )
 
@@ -49,6 +53,167 @@ func init() {
 	if err != nil {
 		panic("failed to marshal benchmark data: " + err.Error())
 	}
+}
+
+func TestMarshalUnmarshalRoundTrip(t *testing.T) {
+	data, err := Marshal(benchData)
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+
+	var got testStruct
+	if err := Unmarshal(data, &got); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+
+	if got.ID != benchData.ID ||
+		got.Name != benchData.Name ||
+		got.Email != benchData.Email ||
+		got.Age != benchData.Age ||
+		got.Active != benchData.Active ||
+		got.Score != benchData.Score ||
+		got.CreatedAt != benchData.CreatedAt ||
+		got.Address != benchData.Address ||
+		len(got.Tags) != len(benchData.Tags) {
+		t.Fatalf("round trip mismatch: got %+v, want %+v", got, benchData)
+	}
+	for i := range got.Tags {
+		if got.Tags[i] != benchData.Tags[i] {
+			t.Fatalf("round trip tags mismatch: got %+v, want %+v", got.Tags, benchData.Tags)
+		}
+	}
+}
+
+func TestMarshalToStringAndValid(t *testing.T) {
+	s, err := MarshalToString(benchData)
+	if err != nil {
+		t.Fatalf("MarshalToString() error = %v", err)
+	}
+	if s == "" {
+		t.Fatal("MarshalToString() returned empty string")
+	}
+	if !Valid([]byte(s)) {
+		t.Fatalf("Valid(%q) = false, want true", s)
+	}
+	if Valid([]byte(`{"broken":`)) {
+		t.Fatal("Valid() accepted malformed JSON")
+	}
+}
+
+func TestEncoderDecoder(t *testing.T) {
+	var buf bytes.Buffer
+	enc := NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(struct {
+		Value string `json:"value"`
+	}{Value: "<tag>"}); err != nil {
+		t.Fatalf("Encode() error = %v", err)
+	}
+	if strings.Contains(buf.String(), `\u003c`) {
+		t.Fatalf("Encode() escaped HTML despite SetEscapeHTML(false): %q", buf.String())
+	}
+
+	dec := NewDecoder(strings.NewReader(buf.String()))
+	var got struct {
+		Value string `json:"value"`
+	}
+	if err := dec.Decode(&got); err != nil {
+		t.Fatalf("Decode() error = %v", err)
+	}
+	if got.Value != "<tag>" {
+		t.Fatalf("Decode() value = %q, want %q", got.Value, "<tag>")
+	}
+}
+
+func TestDecoderOptions(t *testing.T) {
+	dec := NewDecoder(strings.NewReader(`{"known": 1, "extra": 2}`))
+	dec.DisallowUnknownFields()
+	var dst struct {
+		Known int `json:"known"`
+	}
+	if err := dec.Decode(&dst); err == nil {
+		t.Fatal("Decode() with DisallowUnknownFields accepted an unknown field")
+	}
+
+	dec = NewDecoder(strings.NewReader(`{"n": 9007199254740993}`))
+	dec.UseNumber()
+	var numbers map[string]any
+	if err := dec.Decode(&numbers); err != nil {
+		t.Fatalf("Decode() with UseNumber error = %v", err)
+	}
+	gotNumber, ok := numbers["n"].(interface{ String() string })
+	if !ok {
+		t.Fatalf("UseNumber decoded type = %T, want Stringer", numbers["n"])
+	}
+	if got := gotNumber.String(); got != "9007199254740993" {
+		t.Fatalf("UseNumber decoded value = %q, want %q", got, "9007199254740993")
+	}
+}
+
+func TestTopLevelFunctionsDelegateToAPI(t *testing.T) {
+	original := API
+	t.Cleanup(func() {
+		API = original
+	})
+
+	API = mockCore{}
+
+	data, err := Marshal("ignored")
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+	if string(data) != `{"mock":true}` {
+		t.Fatalf("Marshal() = %s, want mock payload", data)
+	}
+
+	unmarshalErr := Unmarshal([]byte(`{}`), nil)
+	if !errors.Is(unmarshalErr, errMockUnmarshal) {
+		t.Fatalf("Unmarshal() error = %v, want %v", unmarshalErr, errMockUnmarshal)
+	}
+
+	s, err := MarshalToString("ignored")
+	if err != nil {
+		t.Fatalf("MarshalToString() error = %v", err)
+	}
+	if s != `{"mock":"string"}` {
+		t.Fatalf("MarshalToString() = %q, want mock string", s)
+	}
+
+	if Valid(nil) {
+		t.Fatal("Valid() = true, want false from mock")
+	}
+}
+
+var errMockUnmarshal = errors.New("mock unmarshal")
+
+type mockCore struct{}
+
+func (mockCore) Marshal(_ any) ([]byte, error) {
+	return []byte(`{"mock":true}`), nil
+}
+
+func (mockCore) Unmarshal(_ []byte, _ any) error {
+	return errMockUnmarshal
+}
+
+func (mockCore) MarshalIndent(_ any, _, _ string) ([]byte, error) {
+	return []byte("{\n  \"mock\": true\n}"), nil
+}
+
+func (mockCore) MarshalToString(_ any) (string, error) {
+	return `{"mock":"string"}`, nil
+}
+
+func (mockCore) NewEncoder(_ io.Writer) Encoder {
+	return nil
+}
+
+func (mockCore) NewDecoder(_ io.Reader) Decoder {
+	return nil
+}
+
+func (mockCore) Valid(_ []byte) bool {
+	return false
 }
 
 // BenchmarkMarshal measures Marshal throughput via the API interface.
