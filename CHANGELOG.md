@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-08-21
+
+### Fixed
+
+- `v2`：修正 README 中 `jsonv2` 后端性能说明的归因。原文把慢于默认后端的原因归给 `encoding/json` 的实现基础，实际来自本后端为跨后端一致而启用的三项对齐选项与缩进的额外拷贝；直接对比标准库两个包，`encoding/json/v2` 反而更快
+
+### Changed
+
+- `v2`：README 新增「标准库 struct tag 与接口的后端支持」小节，给出 `omitzero`、`omitzero` 认 `IsZero()`、`case:strict`、`case:ignore`、`embed` 兜底字段、`MarshalerTo` / `UnmarshalerFrom` 在五个后端下的实测支持情况——依赖这些能力时需选择默认后端、`jsonv2` 或 `sonic`
+
 ## [2.1.0] - 2026-08-21
 
 ### Added
