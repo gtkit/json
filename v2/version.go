@@ -1,4 +1,4 @@
 package json
 
 // Version is the current version of the json package.
-const Version = "v2.0.7"
+const Version = "v2.1.0"
