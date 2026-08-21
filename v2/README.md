@@ -207,7 +207,32 @@ v2 采用 RFC 7493 语义，以下差异在切换前必须确认。表中每一�
 
 ### 关于性能
 
-Go 1.27 的 `encoding/json` 本身已建立在 v2 之上，因此这个后端不是性能选项。本机 `go test -bench=. -count=3` 实测：结构体 `Marshal` 比默认后端慢约 13%，`Valid` 慢约 40%（v2 的校验包含重复键检测），`Unmarshal` 与小对象 `Marshal` 基本持平。选它的理由是 RFC 7493 严格语义与零外部依赖；要吞吐用 `sonic` 或 `go_json`。
+这个后端不是性能选项，但原因不是 v2 慢。直接调用标准库两个包对比，`encoding/json/v2` 的 `Marshal` 比 `encoding/json` 快 10~15%、`Unmarshal` 快 5~20%，分配次数相同——`encoding/json` 每次都要处理一整套 v1 兼容选项，这就是差距来源。
+
+本后端把这点优势花掉了：上一节列出的三项对齐各有成本（`Deterministic` 要排序 map 键、另两个是额外的选项处理），`MarshalIndent` 与 `SetIndent` 又多一次缩进拷贝。本机 `go test -bench=. -count=3` 实测的净结果是结构体 `Marshal` 比默认后端慢约 13%、`Valid` 慢约 40%（v2 的校验包含重复键检测），`Unmarshal` 与小对象 `Marshal` 基本持平。
+
+选它的理由是 RFC 7493 严格语义与零外部依赖；要吞吐用 `sonic` 或 `go_json`。
+
+## 标准库 struct tag 与接口的后端支持
+
+`omitzero` 是 `encoding/json` 自身的 tag；`case:ignore` / `case:strict` / `embed` 与 `MarshalerTo` / `UnmarshalerFrom` 接口来自 `encoding/json/v2`，Go 1.27 起在 `encoding/json` 下同样生效（v1 的实现已改用 v2 引擎）。
+
+这些能力在默认后端、`jsonv2` 与 `sonic` 下均可用。`go_json` 与 `jsoniter` 各自实现了独立的 tag 解析器，按自己的规则处理这些字段。实测于 Go 1.27：
+
+| 能力 | _(默认)_ | `jsonv2` | `sonic` | `go_json` | `jsoniter` |
+|------|:--------:|:--------:|:-------:|:---------:|:----------:|
+| `omitzero` | ✅ | ✅ | ✅ | — | — |
+| `omitzero` 认 `IsZero() bool` 方法 | ✅ | ✅ | ✅ | — | — |
+| `case:strict` | ✅ | ✅ | ✅ | — | — |
+| `case:ignore` | ✅ | ✅ | ✅ | 注 | 注 |
+| `embed` 兜底字段（`jsontext.Value` 收集未匹配成员） | ✅ | ✅ | ✅ | — | — |
+| `MarshalerTo` / `UnmarshalerFrom`（`MarshalJSONTo` / `UnmarshalJSONFrom`） | ✅ | ✅ | ✅ | — | — |
+
+标 — 的格子表示该 tag 或接口不参与决策，字段回到默认处理：`omitzero` 字段照常出现在输出里（如 `{"ns":null,"z":0}`）、`case:strict` 不改变成员名匹配、`embed` 兜底字段收不到未匹配成员、`MarshalJSONTo` 不被调用而走反射的默认表示。
+
+标「注」的两格结果与左侧相同，但源于 `go_json` 与 `jsoniter` 默认就以大小写不敏感的方式匹配成员名，并非 `case:ignore` 生效。
+
+依赖上表任一能力时，请选择默认后端、`jsonv2` 或 `sonic`。
 
 ## 后端特有功能
 

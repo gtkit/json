@@ -5,6 +5,7 @@ package json
 import (
 	"bytes"
 	stdjson "encoding/json"
+	"encoding/json/jsontext"
 	"io"
 	"strings"
 	"testing"
@@ -589,6 +590,142 @@ func TestJSONV2OmitEmpty(t *testing.T) {
 			t.Fatalf("Marshal() = %s, want it to contain %s", got, want)
 		}
 	}
+}
+
+// TestJSONV2StandardTagSupport pins the jsonv2 column of the README matrix.
+//
+// These capabilities come from the shared v2 engine rather than from anything
+// this backend implements, and no option switches them off: field tags take
+// precedence over the equivalent Options, so neither
+// OmitZeroStructFields(false) nor MatchCaseInsensitiveNames(true) makes these
+// assertions fail. That makes this a regression sentinel — against toolchain
+// changes and against the backend being rewired to something other than
+// encoding/json/v2 — not proof of a contract this package upholds on its own.
+func TestJSONV2StandardTagSupport(t *testing.T) {
+	t.Run("omitzero", func(t *testing.T) {
+		var v struct {
+			NilSlice   []int `json:"ns,omitzero"`
+			EmptySlice []int `json:"es,omitzero"`
+			Zero       int   `json:"z,omitzero"`
+			Keep       int   `json:"keep"`
+		}
+		v.EmptySlice = []int{}
+		v.Keep = 1
+		got, err := Marshal(v)
+		if err != nil {
+			t.Fatalf("Marshal() error = %v", err)
+		}
+		// omitzero omits the nil slice and the zero int, but keeps the
+		// non-nil empty slice: that is the Go-zero-value definition.
+		if string(got) != `{"es":[],"keep":1}` {
+			t.Fatalf("Marshal() = %s, want omitzero to drop the nil slice and zero int", got)
+		}
+	})
+
+	t.Run("omitzero 认 IsZero 方法", func(t *testing.T) {
+		type wrapper struct {
+			C    isZeroAt42 `json:"c,omitzero"`
+			Keep int        `json:"keep"`
+		}
+		got, err := Marshal(wrapper{C: isZeroAt42{N: 42}, Keep: 1})
+		if err != nil {
+			t.Fatalf("Marshal() error = %v", err)
+		}
+		if string(got) != `{"keep":1}` {
+			t.Fatalf("Marshal() = %s, want the field omitted via IsZero()", got)
+		}
+		got, err = Marshal(wrapper{C: isZeroAt42{N: 7}, Keep: 1})
+		if err != nil {
+			t.Fatalf("Marshal() error = %v", err)
+		}
+		if string(got) != `{"c":{"N":7},"keep":1}` {
+			t.Fatalf("Marshal() = %s, want the field kept when IsZero() is false", got)
+		}
+	})
+
+	t.Run("case:strict", func(t *testing.T) {
+		var v struct {
+			Name string `json:"name,case:strict"`
+		}
+		if err := Unmarshal([]byte(`{"NAME":"x"}`), &v); err != nil {
+			t.Fatalf("Unmarshal() error = %v", err)
+		}
+		if v.Name != "" {
+			t.Fatalf("Name = %q, want zero value: case:strict must reject NAME", v.Name)
+		}
+	})
+
+	t.Run("case:ignore", func(t *testing.T) {
+		var v struct {
+			Name string `json:"name,case:ignore"`
+		}
+		if err := Unmarshal([]byte(`{"NAME":"x"}`), &v); err != nil {
+			t.Fatalf("Unmarshal() error = %v", err)
+		}
+		if v.Name != "x" {
+			t.Fatalf("Name = %q, want \"x\": case:ignore must accept NAME", v.Name)
+		}
+	})
+
+	t.Run("embed 兜底字段", func(t *testing.T) {
+		type fallback struct {
+			A    int        `json:"a"`
+			Rest RawMessage `json:",embed"`
+		}
+		var v fallback
+		if err := Unmarshal([]byte(`{"a":1,"zzz":9}`), &v); err != nil {
+			t.Fatalf("Unmarshal() error = %v", err)
+		}
+		if v.A != 1 {
+			t.Fatalf("A = %d, want 1", v.A)
+		}
+		if string(v.Rest) != `{"zzz":9}` {
+			t.Fatalf("Rest = %s, want the unmatched member", v.Rest)
+		}
+		got, err := Marshal(v)
+		if err != nil {
+			t.Fatalf("Marshal() error = %v", err)
+		}
+		if string(got) != `{"a":1,"zzz":9}` {
+			t.Fatalf("Marshal() = %s, want the fallback members merged back", got)
+		}
+	})
+
+	t.Run("MarshalerTo 与 UnmarshalerFrom", func(t *testing.T) {
+		got, err := Marshal(v2Iface{})
+		if err != nil {
+			t.Fatalf("Marshal() error = %v", err)
+		}
+		if string(got) != `"marshalerTo"` {
+			t.Fatalf("Marshal() = %s, want MarshalJSONTo to be called", got)
+		}
+		var back v2Iface
+		if err := Unmarshal([]byte(`"in"`), &back); err != nil {
+			t.Fatalf("Unmarshal() error = %v", err)
+		}
+		if back.V != `unmarshalerFrom:"in"` {
+			t.Fatalf("V = %q, want UnmarshalJSONFrom to be called", back.V)
+		}
+	})
+}
+
+type isZeroAt42 struct{ N int }
+
+func (i isZeroAt42) IsZero() bool { return i.N == 42 }
+
+type v2Iface struct{ V string }
+
+func (v2Iface) MarshalJSONTo(enc *jsontext.Encoder) error {
+	return enc.WriteValue([]byte(`"marshalerTo"`))
+}
+
+func (v *v2Iface) UnmarshalJSONFrom(dec *jsontext.Decoder) error {
+	raw, err := dec.ReadValue()
+	if err != nil {
+		return err
+	}
+	v.V = "unmarshalerFrom:" + string(raw)
+	return nil
 }
 
 // TestJSONV2NativeSemantics pins the differences from the default backend that
