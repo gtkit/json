@@ -1,3 +1,5 @@
 .idea/
 .Ds_Store
-.learnings/
+.vscode/
+.DS_Store
+*.log
