@@ -1,4 +1,4 @@
-//go:build !jsoniter && !go_json && !(sonic && (linux || windows || darwin))
+//go:build !jsoniter && !go_json && !jsonv2 && !(sonic && (linux || windows || darwin))
 
 package json
 

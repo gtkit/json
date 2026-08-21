@@ -1,6 +1,6 @@
 module github.com/gtkit/json/v2
 
-go 1.26
+go 1.27
 
 require (
 	github.com/bytedance/sonic v1.15.2

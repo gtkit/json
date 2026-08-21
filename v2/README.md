@@ -1,7 +1,7 @@
 # gtkit/json/v2
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/gtkit/json/v2.svg)](https://pkg.go.dev/github.com/gtkit/json/v2)
-[![Go Version](https://img.shields.io/badge/go-%3E%3D1.26-blue)](https://go.dev)
+[![Go Version](https://img.shields.io/badge/go-%3E%3D1.27-blue)](https://go.dev)
 
 通过 build tags 无缝切换 JSON 编解码后端的 Go 库。零修改业务代码，一个 `-tags` 参数即可获得数倍性能提升。
 
@@ -10,6 +10,7 @@
 | Build Tag | 后端库 | 适用场景 |
 |-----------|--------|---------|
 | _(默认)_ | `encoding/json` | 零依赖、最大兼容性 |
+| `jsonv2` | `encoding/json/v2` | 零依赖，需要 RFC 7493 严格语义（拒绝重复键、拒绝无效 UTF-8） |
 | `sonic` | [bytedance/sonic](https://github.com/bytedance/sonic) | 追求极致性能（Linux/macOS/Windows，amd64/arm64） |
 | `go_json` | [goccy/go-json](https://github.com/goccy/go-json) | 高性能且全平台兼容 |
 | `jsoniter` | [json-iterator/go](https://github.com/json-iterator/go) | PHP 兼容模式、私有字段支持 |
@@ -75,6 +76,9 @@ func main() {
 # 默认 encoding/json
 go build ./...
 
+# 使用 encoding/json/v2（标准库，需 Go 1.27+）
+go build -tags=jsonv2 ./...
+
 # 使用 sonic（推荐生产环境，Linux/macOS/Windows）
 go build -tags=sonic ./...
 
@@ -93,10 +97,11 @@ sonic 依赖 JIT 或汇编优化，仅支持以下平台：
 - `darwin/amd64`、`darwin/arm64`
 - `windows/amd64`
 
-如果你的目标平台不在此列表中，建议使用 `go_json` 作为替代：
+如果你的目标平台不在此列表中，可以使用 `go_json`，或用标准库的 `jsonv2`（实测 `freebsd/amd64`、`linux/arm`、`linux/riscv64`、`windows/386`、`js/wasm` 均可构建）：
 
 ```bash
 GOOS=freebsd GOARCH=amd64 go build -tags=go_json ./...
+GOOS=js GOARCH=wasm go build -tags=jsonv2 ./...
 ```
 
 ## API 一览
@@ -162,9 +167,47 @@ type Decoder interface {
 ### 常量
 
 ```go
-json.Package  // 当前后端库名，如 "encoding/json"、"github.com/bytedance/sonic"
+json.Package  // 当前后端库名，如 "encoding/json"、"encoding/json/v2"、"github.com/bytedance/sonic"
 json.Version  // 包版本号，如 "v2.0.0"
 ```
+
+## encoding/json/v2 后端
+
+`-tags=jsonv2` 使用 Go 1.27 标准库的 `encoding/json/v2`，编解码全部走 v2，`json.Package` 为 `"encoding/json/v2"`。顶层函数、`Core` / `Encoder` / `Decoder` 接口与类型别名的签名与其他后端完全一致，业务代码不需要修改。
+
+该后端需要 `jsonv2` GOEXPERIMENT 处于开启状态。它在 Go 1.27 中默认开启，无需任何设置；只有显式 `GOEXPERIMENT=nojsonv2` 构建时 `encoding/json/v2` 不可导入，此时请改用其他 tag。
+
+### 与默认后端的行为差异
+
+v2 采用 RFC 7493 语义，以下差异在切换前必须确认。表中每一行都有对应测试锁定（`jsonv2_test.go`），实测于 Go 1.27。
+
+| 行为 | 默认后端 | `-tags=jsonv2` |
+|------|---------|----------------|
+| **字段名匹配** | 大小写不敏感回落 | **严格区分大小写，不匹配时留零值且不报错** |
+| HTML 字符 `<` `>` `&` | 转义为 `\u003c` 等 | 原样输出 |
+| 重复对象键 | 取最后一个 | `Unmarshal` 报错、`Valid` 返回 `false` |
+| 无效 UTF-8 | 替换为 U+FFFD | 报错 |
+| `nil` slice / `nil` map | `null` | `[]` / `{}` |
+
+唯一需要改代码的是第一行：结构体字段没写 `json` tag 而 JSON 里是小写名时，v2 不会匹配上，字段保持零值且 `Unmarshal` 返回 `nil`。给字段补上 `json:"name"` tag 即可，这在所有后端下都正确。需要让拼错的成员名暴露出来时，用 `Decoder.DisallowUnknownFields()`。
+
+### 与其他后端保持一致的三处
+
+`encoding/json/v2` 的下列默认值会让本后端成为五个后端里唯一行为不同的那个，因此显式覆盖，与默认后端及 `sonic` / `go_json` / `jsoniter` 逐字节一致：
+
+| 行为 | v2 单独的默认值 | 本后端 |
+|------|----------------|--------|
+| map 键顺序 | Go 随机化迭代顺序，同一个值每次输出不同字节 | 按键排序（`Deterministic`） |
+| `time.Duration` | 报错 `no default representation`，编解码都失败 | 纳秒整数（`FormatDurationAsNano`） |
+| `omitempty` | 只省略编码为 `null` / `""` / `{}` / `[]` 的值，`0` 与 `false` 保留 | 零值一并省略（`OmitEmptyWithLegacySemantics`） |
+
+前两项的性质值得说明：map 顺序随机会让签名、缓存键、ETag、快照比对**间歇性**失效（实测同一个 8 键 map 连续 marshal 300 次产生 8 种字节序列）；`time.Duration` 则是直接的运行时失败——任何含 `Duration` 字段的结构体都无法编解码。`omitempty` 一项若不覆盖，历史上一直省略零值的响应体会突然多出 `"n":0`、`"b":false` 这类字段。
+
+对 `omitempty` 语义本身有要求时，用 v2 推荐的 `omitzero` tag：它在所有后端下都表示"Go 零值则省略"。
+
+### 关于性能
+
+Go 1.27 的 `encoding/json` 本身已建立在 v2 之上，因此这个后端不是性能选项。本机 `go test -bench=. -count=3` 实测：结构体 `Marshal` 比默认后端慢约 13%，`Valid` 慢约 40%（v2 的校验包含重复键检测），`Unmarshal` 与小对象 `Marshal` 基本持平。选它的理由是 RFC 7493 严格语义与零外部依赖；要吞吐用 `sonic` 或 `go_json`。
 
 ## 后端特有功能
 
@@ -247,6 +290,9 @@ func TestWithMockJSON(t *testing.T) {
 ```bash
 # 标准库
 go test -bench=. -benchmem
+
+# encoding/json/v2
+go test -bench=. -benchmem -tags=jsonv2
 
 # sonic
 go test -bench=. -benchmem -tags=sonic
