@@ -9,9 +9,11 @@ import (
 )
 
 // 使用类型别名，避免与标准库 json 包的类型冲突.
-type Encoder = sonic.Encoder
-type Decoder = sonic.Decoder
-type RawMessage = sonic.NoCopyRawMessage
+type (
+	Encoder    = sonic.Encoder
+	Decoder    = sonic.Decoder
+	RawMessage = sonic.NoCopyRawMessage
+)
 
 var (
 	json = sonic.ConfigStd

@@ -7,9 +7,11 @@ import (
 	"log"
 )
 
-type Encoder = json.Encoder
-type Decoder = json.Decoder
-type RawMessage = json.RawMessage
+type (
+	Encoder    = json.Encoder
+	Decoder    = json.Decoder
+	RawMessage = json.RawMessage
+)
 
 var (
 	Marshal = json.Marshal

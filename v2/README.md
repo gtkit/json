@@ -188,8 +188,11 @@ v2 采用 RFC 7493 语义，以下差异在切换前必须确认。表中每一�
 | 重复对象键 | 取最后一个 | `Unmarshal` 报错、`Valid` 返回 `false` |
 | 无效 UTF-8 | 替换为 U+FFFD | 报错 |
 | `nil` slice / `nil` map | `null` | `[]` / `{}` |
+| **错误类型** | `*json.SyntaxError` / `*json.UnmarshalTypeError` | `*jsontext.SyntacticError` / `*jsonv2.SemanticError` |
 
 唯一需要改代码的是第一行：结构体字段没写 `json` tag 而 JSON 里是小写名时，v2 不会匹配上，字段保持零值且 `Unmarshal` 返回 `nil`。给字段补上 `json:"name"` tag 即可，这在所有后端下都正确。需要让拼错的成员名暴露出来时，用 `Decoder.DisallowUnknownFields()`。
+
+最后一行对错误处理代码同样重要：两个包的错误类型互不为对方，`errors.As(err, &json.SyntaxError{})` 这类分类判断在切到 `-tags=jsonv2` 后会**静默失效**（返回 `false` 而不是报错）。如果业务代码按错误类型区分处理（如 422 参数错误 vs 500 内部错误），切换前需要确认这一点。
 
 ### 与其他后端保持一致的三处
 

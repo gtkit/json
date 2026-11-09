@@ -28,11 +28,16 @@ type Marshaler = stdjson.Marshaler
 type Unmarshaler = stdjson.Unmarshaler
 
 func init() {
-	// This init runs after all backend-specific init() functions (file-level init
-	// order is undefined across files, but all init()s complete before main).
-	// If a backend already set API, this is a no-op.
-	// If API is still nil (unexpected build tag combination, or the default backend
-	// file was excluded), fall back to encoding/json to prevent nil-panic.
+	// Within a package, go build compiles the files in lexical filename
+	// order, so this init runs BEFORE every backend init (api.go sorts
+	// ahead of go_json.go, json.go, jsoniter.go, jsonv2.go, sonic.go):
+	// this sets the encoding/json fallback first, and the selected
+	// backend's init overwrites API right after. The order is not what
+	// keeps this correct, though — this guard assigns only when API is
+	// nil, so the fallback also wins if a build system ever presents the
+	// files in another order. It covers the unexpected build tag
+	// combination case, and the case where the default backend file
+	// (json.go) was somehow excluded from the build.
 	if API == nil {
 		API = stdFallback{}
 	}
